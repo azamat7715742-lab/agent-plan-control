@@ -1,0 +1,352 @@
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101c32">
+<title>Agent Plan Control</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f5f9;color:#18243a;font-family:Arial,sans-serif}
+header{background:#101c32;color:white;padding:22px 18px 18px}
+header h2{margin:0;font-size:21px}
+header p{margin:7px 0 0;color:#b8c6da;font-size:12px}
+nav{display:flex;overflow-x:auto;background:white;padding:9px;gap:7px;position:sticky;top:0;z-index:5}
+nav button{border:0;background:#f0f2f6;padding:12px;border-radius:10px;white-space:nowrap;color:#26364e}
+nav button.active{background:#173b69;color:white}
+main{max-width:700px;margin:auto;padding:14px}
+section{display:none}
+section.active{display:block}
+.card{background:white;padding:15px;border-radius:14px;margin-bottom:12px;box-shadow:0 3px 12px #15233b0b}
+h3{margin:0 0 14px;font-size:17px}
+h4{margin:12px 0 8px}
+small,.muted{color:#778398}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:15px}
+.stat strong{display:block;font-size:22px;margin-top:8px}
+input,select{width:100%;padding:13px;border:1px solid #dce2eb;border-radius:9px;margin:6px 0 12px;font-size:15px;background:white;color:#17243a}
+label{font-size:13px;font-weight:bold}
+button{cursor:pointer}
+.btn{border:0;border-radius:9px;padding:12px 15px;background:#173b69;color:white;font-weight:bold}
+.btn2{border:0;border-radius:8px;padding:9px 11px;background:#edf1f7;color:#173b69}
+.red{background:#fff0f0;color:#bd3030}
+.full{width:100%}
+.progress{height:9px;background:#e8edf3;border-radius:10px;overflow:hidden;margin:9px 0}
+.progress div{height:100%;background:#16a477;border-radius:10px}
+.shop{padding:13px 0;border-bottom:1px solid #edf0f4}
+.shop:last-child{border:0}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{font-size:11px;padding:5px 8px;border-radius:20px;background:#eaf1ff;color:#24518b}
+.tag.good{background:#e5f7ed;color:#13834c}
+.tag.avg{background:#fff4dc;color:#996300}
+.tag.low{background:#ffe9e9;color:#bd3636}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.hidden{display:none!important}
+.note{font-size:12px;color:#778398;line-height:1.5}
+hr{border:0;border-top:1px solid #edf0f4;margin:14px 0}
+</style>
+</head>
+<body>
+<header>
+<h2>AGENT PLAN CONTROL</h2>
+<p>Shaxsiy savdo va KPI nazorati</p>
+</header>
+<nav>
+<button class="active" onclick="tab('home',this)">Bosh sahifa</button>
+<button onclick="tab('shops',this)">Do‘konlar</button>
+<button onclick="tab('sales',this)">Sotuv</button>
+<button onclick="tab('settings',this)">Sozlamalar</button>
+</nav>
+<main>
+
+<section id="home" class="active">
+<div class="row">
+<h3>Umumiy ko‘rsatkichlar</h3>
+<select id="monthFilter" onchange="render()" style="width:auto;max-width:145px"></select>
+</div>
+<div class="grid">
+<div class="card stat"><small>Jami do‘konlar</small><strong id="count">0</strong></div>
+<div class="card stat"><small>Oylik plan</small><strong id="plan">0</strong></div>
+<div class="card stat"><small>Sotuv</small><strong id="sold">0</strong></div>
+<div class="card stat"><small>Qolgan karobka</small><strong id="left">0</strong></div>
+</div>
+<div class="card">
+<div class="row"><b>Umumiy plan bajarilishi</b><b id="percent">0%</b></div>
+<div class="progress"><div id="bar" style="width:0%"></div></div>
+<small id="dailyInfo">Kunlik plan: 0 karobka</small>
+</div>
+<div class="card">
+<h3>Toifalar bo‘yicha holat</h3>
+<div id="categories"></div>
+</div>
+<div class="card">
+<h3>Do‘konlar reytingi</h3>
+<div id="ranking"></div>
+</div>
+</section>
+
+<section id="shops">
+<h3>Do‘konlarni boshqarish</h3>
+<div class="card">
+<h3 id="formTitle">Yangi do‘kon qo‘shish</h3>
+<input id="editId" type="hidden">
+<label>Do‘kon nomi</label>
+<input id="shopName" placeholder="Masalan: Baraka market">
+<label>Do‘kon toifasi</label>
+<select id="shopType">
+<option value="good">Yaxshi</option>
+<option value="avg">O‘rtacha</option>
+<option value="low">Sust</option>
+</select>
+<label>Do‘kon uchun KPI (karobka)</label>
+<input id="shopKpi" type="number" min="0" placeholder="Masalan: 10">
+<button class="btn full" onclick="saveShop()">Saqlash</button>
+<button class="btn2 full hidden" id="cancelEdit" onclick="clearForm()">Bekor qilish</button>
+</div>
+<div class="card">
+<h3>Mening do‘konlarim</h3>
+<div id="shopList"></div>
+</div>
+</section>
+
+<section id="sales">
+<h3>Sotuv kiritish</h3>
+<div class="card">
+<label>Do‘konni tanlang</label>
+<select id="saleShop"></select>
+<label>Sana</label>
+<input type="date" id="saleDate">
+<label>Sotilgan karobka</label>
+<input type="number" id="saleBoxes" min="1" placeholder="Masalan: 5">
+<button class="btn full" onclick="addSale()">Sotuvni saqlash</button>
+</div>
+<div class="card">
+<h3>Oxirgi sotuvlar</h3>
+<div id="saleList"></div>
+</div>
+</section>
+
+<section id="settings">
+<h3>Ilova sozlamalari</h3>
+<div class="card">
+<h3>Oylik reja</h3>
+<label>Umumiy oylik plan (karobka)</label>
+<input id="monthlyTarget" type="number" min="0">
+<label>Oydagi ish kunlari</label>
+<input id="workDays" type="number" min="1" max="31">
+<button class="btn full" onclick="saveSettings()">Saqlash</button>
+<p class="note">Umumiy plan do‘konlarning toifasiga qarab avtomatik taqsimlanadi. Ish kunlari kunlik rejani hisoblash uchun ishlatiladi.</p>
+</div>
+<div class="card">
+<h3>Toifalar og‘irligi</h3>
+<label>Yaxshi do‘kon koeffitsiyenti</label>
+<input id="weightGood" type="number" min="0.1" step="0.1">
+<label>O‘rtacha do‘kon koeffitsiyenti</label>
+<input id="weightAvg" type="number" min="0.1" step="0.1">
+<label>Sust do‘kon koeffitsiyenti</label>
+<input id="weightLow" type="number" min="0.1" step="0.1">
+<button class="btn full" onclick="saveWeights()">Koeffitsiyentlarni saqlash</button>
+</div>
+<div class="card">
+<h3>Ma’lumotlar</h3>
+<button class="btn2 full" onclick="exportData()">Zaxira nusxasini yuklab olish</button>
+<hr>
+<button class="btn2 full red" onclick="resetData()">Barcha ma’lumotlarni tozalash</button>
+</div>
+</section>
+
+</main>
+<script>
+const KEY='agent_plan_control_v1';
+let db;
+try{
+db=JSON.parse(localStorage.getItem(KEY));
+}catch(e){db=null}
+if(!db||!Array.isArray(db.shops)||!Array.isArray(db.sales)){
+db={
+shops:[],sales:[],
+settings:{target:1000,days:26,weights:{good:1.5,avg:1,low:0.6}}
+};
+}
+let today=new Date().toISOString().slice(0,10);
+
+function persist(){
+localStorage.setItem(KEY,JSON.stringify(db));
+render();
+}
+function money(n){return Number(n||0).toLocaleString('uz-UZ')}
+function currentMonth(){
+return document.getElementById('monthFilter')?.value||today.slice(0,7);
+}
+function monthSales(shopId,month){
+return db.sales.filter(s=>s.shopId===shopId&&s.date.startsWith(month))
+.reduce((n,s)=>n+s.boxes,0);
+}
+function totalSales(month){
+return db.sales.filter(s=>s.date.startsWith(month))
+.reduce((n,s)=>n+s.boxes,0);
+}
+function allocate(){
+let w=db.settings.weights;
+let sum=db.shops.reduce((n,s)=>n+(w[s.type]||1),0);
+return db.shops.map(s=>({
+...s,monthlyPlan:sum?Math.floor(db.settings.target*(w[s.type]||1)/sum):0
+}));
+}
+function dailyPlan(s){
+return Math.ceil(s.monthlyPlan/Math.max(1,db.settings.days));
+}
+function tab(id,btn){
+document.querySelectorAll('main section').forEach(s=>s.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+btn.classList.add('active');
+render();
+}
+function saveShop(){
+let name=document.getElementById('shopName').value.trim();
+let type=document.getElementById('shopType').value;
+let kpi=Number(document.getElementById('shopKpi').value)||0;
+let id=document.getElementById('editId').value;
+if(!name){alert('Do‘kon nomini kiriting');return}
+if(id){
+let s=db.shops.find(x=>x.id===id);
+if(s){s.name=name;s.type=type;s.kpi=kpi}
+}else{
+db.shops.push({id:String(Date.now()),name,type,kpi});
+}
+clearForm();
+persist();
+}
+function clearForm(){
+['shopName','shopKpi','editId'].forEach(id=>document.getElementById(id).value='');
+document.getElementById('formTitle').textContent='Yangi do‘kon qo‘shish';
+document.getElementById('cancelEdit').classList.add('hidden');
+}
+function editShop(id){
+let s=db.shops.find(x=>x.id===id);
+if(!s)return;
+document.getElementById('editId').value=s.id;
+document.getElementById('shopName').value=s.name;
+document.getElementById('shopType').value=s.type;
+document.getElementById('shopKpi').value=s.kpi;
+document.getElementById('formTitle').textContent='Do‘konni tahrirlash';
+document.getElementById('cancelEdit').classList.remove('hidden');
+window.scrollTo(0,0);
+}
+function deleteShop(id){
+if(!confirm('Do‘kon va uning sotuvlari o‘chirilsinmi?'))return;
+db.shops=db.shops.filter(s=>s.id!==id);
+db.sales=db.sales.filter(s=>s.shopId!==id);
+persist();
+}
+function addSale(){
+let id=document.getElementById('saleShop').value;
+let date=document.getElementById('saleDate').value;
+let boxes=Number(document.getElementById('saleBoxes').value);
+if(!id||!date||boxes<=0){alert('Do‘kon, sana va karobka sonini to‘g‘ri kiriting');return}
+db.sales.push({id:String(Date.now()),shopId:id,date,boxes});
+document.getElementById('saleBoxes').value='';
+persist();
+alert('Sotuv saqlandi');
+}
+function deleteSale(id){
+if(!confirm('Ushbu sotuv o‘chirilsinmi?'))return;
+db.sales=db.sales.filter(s=>s.id!==id);
+persist();
+}
+function saveSettings(){
+let target=Number(document.getElementById('monthlyTarget').value);
+let days=Number(document.getElementById('workDays').value);
+if(target<0||days<1||days>31){alert('Reja yoki ish kunlari noto‘g‘ri');return}
+db.settings.target=target;
+db.settings.days=days;
+persist();
+alert('Sozlamalar saqlandi');
+}
+function saveWeights(){
+let g=Number(document.getElementById('weightGood').value);
+let a=Number(document.getElementById('weightAvg').value);
+let l=Number(document.getElementById('weightLow').value);
+if(g<=0||a<=0||l<=0){alert('Koeffitsiyentlar 0 dan katta bo‘lsin');return}
+db.settings.weights={good:g,avg:a,low:l};
+persist();
+alert('Toifa koeffitsiyentlari saqlandi');
+}
+function exportData(){
+let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+let a=document.createElement('a');
+a.href=URL.createObjectURL(blob);
+a.download='agent-plan-zaxira.json';
+a.click();
+URL.revokeObjectURL(a.href);
+}
+function resetData(){
+if(!confirm('Barcha do‘konlar, sotuvlar va sozlamalar o‘chirilsinmi?'))return;
+db={shops:[],sales:[],settings:{target:1000,days:26,weights:{good:1.5,avg:1,low:0.6}}};
+persist();
+}
+function render(){
+let month=currentMonth();
+let shops=allocate();
+let sold=totalSales(month);
+let target=db.settings.target;
+let pct=target?Math.round(sold/target*100):0;
+document.getElementById('count').textContent=db.shops.length;
+document.getElementById('plan').textContent=money(target);
+document.getElementById('sold').textContent=money(sold);
+document.getElementById('left').textContent=money(Math.max(0,target-sold));
+document.getElementById('percent').textContent=pct+'%';
+document.getElementById('bar').style.width=Math.min(100,pct)+'%';
+document.getElementById('dailyInfo').textContent='Umumiy kunlik plan: '+money(Math.ceil(target/Math.max(1,db.settings.days)))+' karobka';
+document.getElementById('categories').innerHTML=['good','avg','low'].map(t=>{
+let arr=shops.filter(s=>s.type===t);
+let names={good:'Yaxshi',avg:'O‘rtacha',low:'Sust'};
+return `<div class="row"><span>${names[t]}</span><b>${arr.length} ta do‘kon</b></div>`;
+}).join('');
+document.getElementById('ranking').innerHTML=shops.map(s=>{
+let n=monthSales(s.id,month),p=s.monthlyPlan?Math.round(n/s.monthlyPlan*100):0;
+return `<div class="shop">
+<div class="row"><b>${escapeHtml(s.name)}</b><b>${p}%</b></div>
+<small>${money(n)} / ${money(s.monthlyPlan)} karobka</small>
+<div class="progress"><div style="width:${Math.min(100,p)}%"></div></div>
+<small>Kunlik plan: ${dailyPlan(s)} | KPI: ${s.kpi} karobka</small>
+</div>`;
+}).join('')||'<p class="muted">Hali do‘kon qo‘shilmagan.</p>';
+document.getElementById('shopList').innerHTML=shops.map(s=>{
+let n=monthSales(s.id,month),p=s.monthlyPlan?Math.round(n/s.monthlyPlan*100):0;
+let label={good:'Yaxshi',avg:'O‘rtacha',low:'Sust'};
+return `<div class="shop">
+<div class="row"><b>${escapeHtml(s.name)}</b><span class="tag ${s.type}">${label[s.type]}</span></div>
+<p class="muted" style="font-size:12px">Oylik plan: ${money(s.monthlyPlan)} | Kunlik: ${dailyPlan(s)}</p>
+<p class="muted" style="font-size:12px">Sotuv: ${money(n)} | KPI: ${money(s.kpi)}</p>
+<div class="progress"><div style="width:${Math.min(100,p)}%"></div></div>
+<div class="actions">
+<button class="btn2" onclick="editShop('${s.id}')">Tahrirlash</button>
+<button class="btn2 red" onclick="deleteShop('${s.id}')">O‘chirish</button>
+</div></div>`;
+}).join('')||'<p class="muted">Do‘konlar ro‘yxati bo‘sh.</p>';
+document.getElementById('saleShop').innerHTML=shops.map(s=>
+`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+document.getElementById('saleList').innerHTML=[...db.sales].filter(s=>s.date.startsWith(month)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30).map(s=>{
+let shop=db.shops.find(x=>x.id===s.shopId);
+return `<div class="shop"><div class="row"><b>${escapeHtml(shop?.name||'O‘chirilgan do‘kon')}</b><b>${s.boxes} karobka</b></div>
+<div class="row"><small>${s.date}</small><button class="btn2 red" onclick="deleteSale('${s.id}')">O‘chirish</button></div></div>`;
+}).join('')||'<p class="muted">Hozircha sotuv yo‘q.</p>';
+document.getElementById('monthlyTarget').value=db.settings.target;
+document.getElementById('workDays').value=db.settings.days;
+document.getElementById('weightGood').value=db.settings.weights.good;
+document.getElementById('weightAvg').value=db.settings.weights.avg;
+document.getElementById('weightLow').value=db.settings.weights.low;
+}
+function escapeHtml(s){
+return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+let mf=document.getElementById('monthFilter');
+mf.value=today.slice(0,7);
+document.getElementById('saleDate').value=today;
+render();
+</script>
+</body>
+</html>
